@@ -1,1 +1,10 @@
-
+{
+  "keys": [
+    {
+      "key": "TRAP",
+      "createdAt": "2026-10-10T14:30:00.000Z",
+      "expiresIn": 99999,
+      "active": true
+    }
+  ]
+}
