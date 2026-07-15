@@ -1,0 +1,2106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner AntiBypass</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#000000',
+                        secondary: '#1a1a1a',
+                        red: '#FF1A4A', green: '#00CC77', blue: '#3B82F6',
+                        purple: '#A78BFA',
+                        orange: '#F97316', discord: '#5865F2',
+                        card: '#222', border: '#333'
+                    },
+                    fontFamily: { 'tech': ['Orbitron', 'sans-serif'], 'main': ['Rajdhani', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* ===== ESTILOS ===== */
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: #000000;
+            font-family: 'Rajdhani', sans-serif; 
+            color: #e0e0e0;
+            min-height: 100vh; 
+            overflow-x: hidden;
+        }
+
+        #bgVideo {
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            opacity: 0.03;
+            pointer-events: none;
+        }
+
+        #fallbackCanvas {
+            position: fixed;
+            inset: 0;
+            z-index: -3;
+            width: 100vw;
+            height: 100vh;
+            opacity: 0.02;
+            display: none;
+        }
+
+        .overlay-gradient {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background: #000000;
+            pointer-events: none;
+        }
+
+        .text-shadow-red { text-shadow: 0 0 20px rgba(255, 26, 74, 0.3); }
+        .border-glow-white { border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 0 20px rgba(0, 0, 0, 0.3); }
+        
+        .glass { 
+            background: rgba(20, 20, 25, 0.92);
+            backdrop-filter: blur(16px); 
+            border: 1px solid rgba(255,255,255,0.06); 
+            position: relative;
+            z-index: 1;
+        }
+
+        .glass-light { 
+            background: rgba(30, 30, 35, 0.8);
+            backdrop-filter: blur(12px); 
+            border: 1px solid rgba(255,255,255,0.04); 
+            position: relative;
+            z-index: 1;
+        }
+        
+        .btn { transition: all 0.3s; }
+        .btn:hover { transform: scale(1.02); }
+
+        /* ===== BOTÃO COM GRADIENTE ANIMADO (VERMELHO) ===== */
+        @keyframes moveGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .btn-action.primary {
+            background: linear-gradient(135deg, #e63946, #b71c1c, #e63946);
+            background-size: 300% 300%;
+            animation: moveGradient 4s ease infinite;
+            color: white;
+            border: none;
+        }
+        .btn-action.primary:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(230, 57, 70, 0.4);
+        }
+        .btn-action.primary:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+            animation: none;
+        }
+
+        .btn-action.secondary {
+            background: rgba(255,255,255,0.05);
+            color: #ccc;
+            border-color: rgba(255,255,255,0.08);
+        }
+        .btn-action.secondary:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        .btn-action.danger {
+            background: rgba(255, 26, 74, 0.08);
+            color: #FF1A4A;
+            border-color: rgba(255, 26, 74, 0.08);
+        }
+        .btn-action.danger:hover {
+            background: rgba(255, 26, 74, 0.15);
+        }
+        .btn-action.discord {
+            background: #5865F2;
+            color: white;
+            border: none;
+        }
+        .btn-action.discord:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(88, 101, 242, 0.2);
+            background: #4752C4;
+        }
+
+        .btn-admin {
+            background: linear-gradient(135deg, #e63946, #b71c1c, #e63946);
+            background-size: 300% 300%;
+            animation: moveGradient 4s ease infinite;
+            color: white;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.7rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .btn-admin:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(230, 57, 70, 0.4);
+        }
+
+        /* ===== PAINEL ADMIN ===== */
+        #pagAdmin {
+            background: #ffffff;
+            color: #1a1a2e;
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+            display: none;
+        }
+        #pagAdmin h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            color: #1a1a2e;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #pagAdmin .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+        }
+        #pagAdmin .admin-table th {
+            text-align: left;
+            padding: 8px 10px;
+            background: #f0f0f5;
+            color: #333;
+            font-weight: 600;
+            border-bottom: 2px solid #ddd;
+            white-space: nowrap;
+        }
+        #pagAdmin .admin-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #eee;
+            color: #333;
+            vertical-align: middle;
+        }
+        #pagAdmin .admin-table tr:hover td {
+            background: #f9f9ff;
+        }
+        #pagAdmin .status-badge {
+            display: inline-block;
+            padding: 2px 12px;
+            border-radius: 12px;
+            font-size: 0.65rem;
+            font-weight: 700;
+        }
+        #pagAdmin .status-badge.ativa { background: #d1fae5; color: #065f46; }
+        #pagAdmin .status-badge.expirada { background: #fee2e2; color: #991b1b; }
+        #pagAdmin .devices-count {
+            font-weight: 700;
+            color: #e63946;
+        }
+        #pagAdmin .btn-voltar {
+            background: #e5e5eb;
+            color: #1a1a2e;
+            padding: 6px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.7rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        #pagAdmin .btn-voltar:hover {
+            background: #d1d1db;
+            transform: scale(1.02);
+        }
+        #pagAdmin .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        #pagAdmin .admin-header h2 {
+            margin-bottom: 0;
+        }
+        .tempo-restante {
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+            color: #e63946;
+        }
+        .tempo-restante.urgente {
+            color: #FF1A4A;
+            animation: pulse-urgente 1s ease-in-out infinite;
+        }
+        @keyframes pulse-urgente {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* ===== BARRA DE PROGRESSO ===== */
+        .barra-progresso {
+            height: 14px;
+            background: #333;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 10px 0;
+            position: relative;
+        }
+        .preenchimento { 
+            height: 100%; 
+            width: 0%; 
+            background: linear-gradient(90deg, #e63946, #b71c1c); 
+            border-radius: 8px; 
+            transition: width 0.4s ease; 
+            box-shadow: 0 0 20px rgba(230, 57, 70, 0.3);
+        }
+        .progresso-texto {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 0 8px rgba(0,0,0,0.8);
+            letter-spacing: 0.5px;
+        }
+
+        .upload-area {
+            border: 2px dashed rgba(230, 57, 70, 0.4);
+            background: rgba(20, 20, 25, 0.6);
+            transition: all 0.3s;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .upload-area:hover {
+            border-color: #e63946;
+            background: rgba(30, 30, 35, 0.85);
+        }
+        .upload-area.dragover {
+            border-color: #e63946;
+            background: rgba(230, 57, 70, 0.08);
+            box-shadow: 0 0 40px rgba(230, 57, 70, 0.1);
+        }
+        .upload-area i {
+            font-size: 3rem;
+            color: #e63946;
+            display: block;
+            margin-bottom: 12px;
+        }
+        .upload-area .main-text {
+            font-size: 1rem;
+            color: #ccc;
+        }
+        .upload-area .main-text .highlight {
+            color: #e63946;
+            font-weight: 600;
+        }
+        .upload-area .sub-text {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 6px;
+        }
+        .upload-area .file-list {
+            margin-top: 12px;
+            font-size: 0.7rem;
+            color: #e63946;
+        }
+
+        .console-log {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            min-height: 80px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            color: #aaa;
+            border: 1px solid rgba(255,255,255,0.05);
+            max-height: 150px;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+        .console-log .log-entry {
+            padding: 2px 0;
+        }
+        .console-log .log-entry .time {
+            color: #666;
+        }
+        .console-log .log-entry .msg {
+            color: #ccc;
+        }
+        .console-log .log-entry .msg.success { color: #00CC77; }
+        .console-log .log-entry .msg.error { color: #FF1A4A; }
+        .console-log .log-entry .msg.warning { color: #F97316; }
+        .console-log .log-entry .msg.info { color: #e63946; }
+
+        .btn-row-top {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        .btn-row-top .btn-action {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .btn-row-bottom {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .btn-row-bottom .btn-action {
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .stat-card {
+            background: rgba(20, 20, 25, 0.7);
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 8px;
+            padding: 12px 8px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .stat-card:hover {
+            border-color: #e63946;
+            background: rgba(30, 30, 35, 0.9);
+        }
+        .stat-card .numero {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #e63946;
+            text-shadow: 0 0 20px rgba(230, 57, 70, 0.15);
+            display: block;
+        }
+        .stat-card .label {
+            font-size: 0.45rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            color: #999;
+            margin-top: 2px;
+        }
+
+        .result-item {
+            background: rgba(20, 20, 25, 0.8);
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin-bottom: 6px;
+            transition: all 0.3s;
+        }
+        .result-item:hover {
+            border-color: #e63946;
+            background: rgba(30, 30, 35, 0.95);
+        }
+        .result-item .pkg {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.6rem;
+            color: #ddd;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .result-item .pkg .tag {
+            font-size: 0.45rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .result-item .pkg .tag.proxy { background: rgba(230, 57, 70, 0.15); color: #e63946; border: 1px solid rgba(230, 57, 70, 0.1); }
+        .result-item .pkg .tag.mod { background: rgba(230, 57, 70, 0.15); color: #e63946; border: 1px solid rgba(230, 57, 70, 0.1); }
+        .result-item .pkg .tag.uninstall { background: rgba(255, 26, 74, 0.08); color: #FF1A4A; border: 1px solid rgba(255, 26, 74, 0.06); }
+        .result-item .pkg .tag.sideload { background: rgba(249, 115, 22, 0.08); color: #F97316; border: 1px solid rgba(249, 115, 22, 0.06); }
+        .result-item .pkg .tag.replay { 
+            background: rgba(255, 26, 74, 0.15); 
+            color: #FF1A4A; 
+            border: 1px solid rgba(255, 26, 74, 0.12);
+            animation: pulse-badge 1.5s ease-in-out infinite;
+        }
+        .result-item .pkg .tag.arquivo { 
+            background: rgba(230, 57, 70, 0.10); 
+            color: #e63946; 
+            border: 1px solid rgba(230, 57, 70, 0.08);
+        }
+        .result-item .pkg .tag.suspeito { 
+            background: rgba(255, 26, 74, 0.15); 
+            color: #FF1A4A; 
+            border: 1px solid rgba(255, 26, 74, 0.12);
+        }
+        .result-item .pkg .tag.apagado { 
+            background: rgba(255, 165, 0, 0.15); 
+            color: #FF8C00; 
+            border: 1px solid rgba(255, 165, 0, 0.12);
+        }
+        .result-item .pkg .tag.freefire { 
+            background: rgba(255, 69, 0, 0.2); 
+            color: #FF4500; 
+            border: 1px solid rgba(255, 69, 0, 0.15);
+            animation: pulse-badge 1.5s ease-in-out infinite;
+        }
+        .result-item .pkg .tag.removido { 
+            background: rgba(255, 59, 92, 0.2); 
+            color: #FF3B5C; 
+            border: 1px solid rgba(255, 59, 92, 0.15);
+        }
+        .result-item .pkg .tag.instalado { 
+            background: rgba(0, 255, 156, 0.15); 
+            color: #00FF9C; 
+            border: 1px solid rgba(0, 255, 156, 0.1);
+        }
+        .result-item .pkg .tag.zeex { background: rgba(230, 57, 70, 0.2); color: #e63946; border: 1px solid rgba(230, 57, 70, 0.15); }
+        .result-item .pkg .tag.fatality { background: rgba(155, 89, 182, 0.2); color: #9B59B6; border: 1px solid rgba(155, 89, 182, 0.15); }
+        .result-item .pkg .tag.luxe { background: rgba(47, 208, 255, 0.2); color: #2FD0FF; border: 1px solid rgba(47, 208, 255, 0.15); }
+        .result-item .pkg .tag.xtremo { background: rgba(255, 59, 92, 0.2); color: #FF3B5C; border: 1px solid rgba(255, 59, 92, 0.15); }
+        .result-item .pkg .tag.dash { background: rgba(0, 255, 156, 0.2); color: #00FF9C; border: 1px solid rgba(0, 255, 156, 0.15); }
+        .result-item .pkg .tag.work { background: rgba(47, 208, 255, 0.2); color: #2FD0FF; border: 1px solid rgba(47, 208, 255, 0.15); }
+        .result-item .pkg .tag.guest { background: rgba(255, 169, 77, 0.2); color: #FFA94D; border: 1px solid rgba(255, 169, 77, 0.15); }
+        .result-item .pkg .tag.certificado { background: rgba(0, 255, 156, 0.2); color: #00FF9C; border: 1px solid rgba(0, 255, 156, 0.15); }
+        .result-item .pkg .tag.aimbot { background: rgba(230, 57, 70, 0.25); color: #e63946; border: 1px solid rgba(230, 57, 70, 0.2); }
+        .result-item .pkg .tag.regedit { background: rgba(230, 57, 70, 0.2); color: #e63946; border: 1px solid rgba(230, 57, 70, 0.15); }
+
+        @keyframes pulse-badge {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        .result-item .details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            font-size: 0.6rem;
+            color: #888;
+            margin-top: 2px;
+        }
+        .result-item .details .status { color: #e63946; font-weight: 600; }
+        .result-item .details .logs { color: #999; }
+        .result-item .details .logs .num { color: #ddd; font-weight: 700; }
+        .result-item .desc { font-size: 0.5rem; color: #777; margin-top: 2px; }
+        
+        .categoria-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: rgba(20, 20, 25, 0.8);
+            border-radius: 8px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+            border: 1px solid rgba(255,255,255,0.04);
+            margin-bottom: 2px;
+        }
+        .categoria-header:hover {
+            background: rgba(30, 30, 35, 0.95);
+            border-color: #e63946;
+        }
+        .categoria-header .titulo {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #ddd;
+            letter-spacing: 0.3px;
+            flex: 1;
+        }
+        .categoria-header .contador {
+            font-size: 0.6rem;
+            color: #e63946;
+            background: rgba(230, 57, 70, 0.12);
+            padding: 0 12px;
+            border-radius: 10px;
+            margin-right: 4px;
+            font-weight: 600;
+        }
+        .categoria-header .contador.replay { background: rgba(255,26,74,0.08); color: #FF1A4A; }
+        .categoria-header .contador.proxy { background: rgba(230,57,70,0.15); color: #e63946; }
+        .categoria-header .contador.mod { background: rgba(230,57,70,0.15); color: #e63946; }
+        .categoria-header .contador.arquivo { background: rgba(230,57,70,0.10); color: #e63946; }
+        .categoria-header .contador.apagado { background: rgba(255,165,0,0.10); color: #FF8C00; }
+        .categoria-header .contador.zeex { background: rgba(230,57,70,0.15); color: #e63946; }
+        .categoria-header .contador.fatality { background: rgba(155,89,182,0.15); color: #9B59B6; }
+        .categoria-header .contador.luxe { background: rgba(47,208,255,0.15); color: #2FD0FF; }
+        .categoria-header .contador.xtremo { background: rgba(255,59,92,0.15); color: #FF3B5C; }
+        .categoria-header .contador.dash { background: rgba(0,255,156,0.15); color: #00FF9C; }
+        .categoria-header .contador.work { background: rgba(47,208,255,0.15); color: #2FD0FF; }
+        .categoria-header .contador.guest { background: rgba(255,169,77,0.15); color: #FFA94D; }
+        .categoria-header .contador.certificado { background: rgba(0,255,156,0.15); color: #00FF9C; }
+        .categoria-header .contador.aimbot { background: rgba(230,57,70,0.2); color: #e63946; }
+        .categoria-header .contador.regedit { background: rgba(230,57,70,0.15); color: #e63946; }
+
+        .categoria-header .seta {
+            font-size: 0.7rem;
+            color: #e63946;
+            transition: transform 0.25s ease;
+            display: inline-block;
+            width: 18px;
+            text-align: center;
+            font-weight: 700;
+            line-height: 1;
+            padding: 2px 0;
+            cursor: pointer;
+        }
+        .categoria-header .seta.aberta {
+            transform: rotate(90deg);
+        }
+
+        .categoria-lista {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.35s ease, padding 0.25s ease;
+            padding: 0 4px;
+        }
+        .categoria-lista.aberta {
+            max-height: 800px;
+            padding: 6px 4px;
+            overflow-y: auto;
+        }
+
+        .footer-safe {
+            margin-top: 24px;
+            padding: 12px 0 6px 0;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            text-align: center;
+        }
+        .footer-safe p {
+            font-size: 0.6rem;
+            color: #888;
+            letter-spacing: 0.3px;
+        }
+        .footer-safe .email {
+            color: #e63946;
+            font-weight: 500;
+        }
+        .footer-safe .kernel {
+            color: #e63946;
+        }
+        .footer-safe .plan-badge {
+            display: inline-block;
+            background: rgba(230, 57, 70, 0.12);
+            color: #e63946;
+            padding: 1px 10px;
+            border-radius: 10px;
+            font-size: 0.5rem;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+
+        .console-log::-webkit-scrollbar { width: 4px; }
+        .console-log::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
+        .console-log::-webkit-scrollbar-thumb { background: #e63946; border-radius: 4px; }
+
+        .main-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #e63946;
+            text-shadow: 0 0 30px rgba(230, 57, 70, 0.15);
+        }
+        .header-sub {
+            font-size: 0.7rem;
+            color: #888;
+            letter-spacing: 0.5px;
+        }
+        .header-local {
+            font-size: 0.6rem;
+            color: #e63946;
+            background: rgba(230, 57, 70, 0.12);
+            padding: 2px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(230, 57, 70, 0.08);
+        }
+
+        .plan-badge-mini {
+            font-size: 0.55rem;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            background: rgba(230, 57, 70, 0.12);
+            color: #e63946;
+            border: 1px solid rgba(230, 57, 70, 0.08);
+        }
+
+        @media (max-width: 640px) {
+            .stats-grid { grid-template-columns: repeat(3, 1fr); }
+            .btn-row-top { flex-direction: column; }
+            .btn-row-bottom { flex-direction: column; }
+            .btn-row-top .btn-action { width: 100%; }
+            .btn-row-bottom .btn-action { width: 100%; }
+            .header-title { font-size: 1.2rem; }
+            #pagAdmin .admin-table { font-size: 0.6rem; }
+            #pagAdmin .admin-table th, #pagAdmin .admin-table td { padding: 4px 6px; }
+        }
+
+        .card-shadow { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6); }
+        .glow-border { position: relative; }
+        .glow-border::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, #e63946, #b71c1c);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0.15;
+            pointer-events: none;
+        }
+
+        .status-text {
+            font-size: 0.7rem;
+            color: #888;
+            margin-top: 8px;
+            text-align: center;
+        }
+        .status-text .highlight { color: #e63946; }
+
+        .admin-badge {
+            background: rgba(230, 57, 70, 0.15);
+            border: 1px solid rgba(230, 57, 70, 0.08);
+            color: #e63946;
+            font-size: 0.5rem;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .nome-amigavel {
+            display: inline-block;
+            font-size: 0.5rem;
+            color: #e63946;
+            font-weight: 500;
+            background: rgba(230, 57, 70, 0.08);
+            padding: 0 8px;
+            border-radius: 4px;
+            margin-left: 4px;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-box {
+            max-width: 500px;
+            width: 100%;
+            background: #1a1a1a;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            position: relative;
+            animation: modalIn 0.3s ease;
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .modal-box .close {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #888;
+            transition: all 0.3s;
+            background: none;
+            border: none;
+        }
+        .modal-box .close:hover {
+            color: #fff;
+            transform: rotate(90deg);
+        }
+        .modal-box .modal-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #e63946;
+            margin-bottom: 16px;
+        }
+        .modal-box .modal-body {
+            font-size: 0.9rem;
+            color: #ccc;
+            line-height: 1.7;
+        }
+        .modal-box .modal-body .highlight {
+            color: #e63946;
+            font-weight: 600;
+        }
+        .modal-box .modal-body .sub {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .modal-box .modal-body .sub .creator {
+            color: #e63946;
+            font-weight: 600;
+        }
+
+        #pagAdmin { display: none; }
+
+        /* Tela de Login estilo Trap */
+        #telaLogin .key-input {
+            background: rgba(20, 20, 25, 0.8);
+            border: 1px solid #444;
+            color: #ddd;
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            outline: none;
+            transition: 0.3s;
+        }
+        #telaLogin .key-input:focus {
+            border-color: #e63946;
+            box-shadow: 0 0 30px rgba(230, 57, 70, 0.08);
+        }
+        #telaLogin .key-input::placeholder {
+            text-transform: none;
+            letter-spacing: 1px;
+            color: #555;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+    <video id="bgVideo" autoplay loop muted playsinline>
+        <source src="https://www.coverr.co/videos/coverr-digital-code-rain-1573/1080p.mp4" type="video/mp4">
+        <source src="https://assets.mixkit.co/videos/preview/mixkit-digital-data-rain-1795/mixkit-digital-data-rain-1795-large.mp4" type="video/mp4">
+        <source src="https://cdn.coverr.co/videos/coverr-digital-code-rain-1573/720p.mp4" type="video/mp4">
+    </video>
+    <canvas id="fallbackCanvas"></canvas>
+    <div class="overlay-gradient"></div>
+
+    <!-- SOBRE MODAL -->
+    <div id="sobreModal" class="modal-overlay">
+        <div class="modal-box">
+            <button class="close" onclick="fecharSobre()">✕</button>
+            <div class="modal-title">📖 SOBRE</div>
+            <div class="modal-body">
+                <p>O <span class="highlight">Scanner AntiBypass</span> é uma ferramenta de análise local para arquivos <strong>Sysdiagnose</strong>, <strong>MCProfile</strong> e <strong>MCSettings</strong> do iOS.</p>
+                <br>
+                <p><strong>🔍 O que ele faz:</strong></p>
+                <ul style="list-style: none; padding: 0; margin: 8px 0 0 0;">
+                    <li style="padding: 4px 0;">• Detecta Proxys de rede (Zeex, Fatality, Luxe, XTREMO, Dash, Work, etc)</li>
+                    <li style="padding: 4px 0;">• Identifica se o proxy foi instalado ou removido</li>
+                    <li style="padding: 4px 0;">• Decodifica arquivos BPLIST automaticamente</li>
+                    <li style="padding: 4px 0;">• Filtra lixo binário e falsos positivos</li>
+                    <li style="padding: 4px 0;">• Tudo 100% local — nenhum dado sai do seu navegador.</li>
+                </ul>
+                <div class="sub">
+                    <strong>Criador:</strong><br>
+                    Desenvolvido por <span class="creator">TrapScreens</span><br>
+                    Especializado em segurança e análise de sistemas iOS.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TELA DE LOGIN -->
+    <div id="telaLogin" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="w-full max-w-sm glass rounded-2xl border-glow-white p-8 shadow-2xl card-shadow glow-border">
+            <div class="text-center mb-8">
+                <h1 class="font-tech text-2xl text-shadow-red mb-2" style="color: #e63946;">scanner antibypass</h1>
+                <p class="text-gray-400 text-sm">ACESSO RESTRITO</p>
+                <div class="w-12 h-0.5 bg-gradient-to-r from-red-500 to-red-300 mx-auto mt-3 rounded-full"></div>
+            </div>
+            <div id="avisoErro" class="hidden bg-red-500/10 border border-red-500/30 text-red-500 p-3 rounded-xl mb-4 text-center font-bold text-sm"></div>
+            <div id="statusLogin" class="hidden text-center py-2 text-red-400 text-sm">🔍 VERIFICANDO...</div>
+            
+            <div class="space-y-5">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2 text-center">🔑 KEY</label>
+                    <input type="text" id="keyInput" placeholder="EX: EYE-ABCD-1234-X" maxlength="30"
+                           class="key-input">
+                </div>
+                <button id="btnLogin" class="btn w-full py-3 rounded-xl text-lg font-tech transition-all" style="background: linear-gradient(135deg, #e63946, #b71c1c, #e63946); background-size: 300% 300%; animation: moveGradient 4s ease infinite; color: white; border: none;">🔓 VERIFICAR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAINEL PRINCIPAL -->
+    <div id="painel" class="hidden main-content relative z-10">
+        <header class="glass rounded-2xl p-4 mb-6 flex justify-between items-center flex-wrap gap-3 card-shadow border-glow-white">
+            <div>
+                <h1 class="header-title">scanner antbypass</h1>
+                <div class="header-sub">PROXY IOS SCANNER ・ ANTBYPASS ON</div>
+            </div>
+            <div class="flex items-center gap-3 flex-wrap">
+                <span class="header-local">100% LOCAL</span>
+                <span id="nomeUser" class="text-sm font-bold text-gray-300"></span>
+                <span id="planBadgeHeader" class="plan-badge-mini"></span>
+                <span id="adminBadge" class="admin-badge hidden">👑 ADMIN</span>
+                <button id="btnAdminToggle" class="btn-admin hidden">PAINEL ADMIN</button>
+                <button id="sair" class="text-red-400 hover:text-red-500 font-bold transition-colors text-sm">SAIR</button>
+            </div>
+        </header>
+
+        <!-- Conteúdo do Scanner -->
+        <div id="pagScan" class="conteudo">
+            <div class="glass rounded-2xl border-glow-white p-6 shadow-xl card-shadow">
+                
+                <div class="glass-light rounded-xl p-4 mb-4 border-glow-white">
+                    <div class="text-xs text-gray-400 mb-2" style="font-family: 'Courier New', monospace;">// ENTRADA DE ARQUIVOS</div>
+                    
+                    <div id="uploadArea" class="upload-area">
+                        <i class="fa fa-cloud-upload"></i>
+                        <div class="main-text">
+                            Arraste <span class="highlight">sys diagnose / mcprofile / mcsettings</span>
+                        </div>
+                        <div class="sub-text">ou clique para selecionar múltiplos arquivos</div>
+                        <div id="fileList" class="file-list hidden"></div>
+                        <input id="arquivo" type="file" accept=".zip,.tar,.gz,.txt,.log,.plist,.mobileconfig" class="hidden" multiple />
+                    </div>
+
+                    <div id="areaProgresso" class="hidden mt-3">
+                        <div class="barra-progresso">
+                            <div id="barra" class="preenchimento"></div>
+                            <div class="progresso-texto" id="progressoTexto">0%</div>
+                        </div>
+                        <p id="statusTexto" class="text-center text-xs text-gray-500">Processando...</p>
+                    </div>
+
+                    <div class="btn-row-top">
+                        <button id="analisar" class="btn-action primary" disabled>INICIAR ANÁLISE</button>
+                        <button id="limpar" class="btn-action secondary">LIMPAR</button>
+                    </div>
+
+                    <div class="btn-row-bottom">
+                        <button onclick="abrirSobre()" class="btn-action secondary">SOBRE</button>
+                        <a href="https://discord.gg/r6gfFvSkU" target="_blank" class="btn-action discord">DISCORD</a>
+                        <button id="recarregarKeys" class="btn-action secondary">RECARREGAR KEYS</button>
+                    </div>
+                </div>
+
+                <div class="glass-light rounded-xl p-4 mb-4 border-glow-white">
+                    <div class="text-xs text-gray-400 mb-2" style="font-family: 'Courier New', monospace;">// CONSOLE DE DETECÇÃO</div>
+                    <div id="consoleLog" class="console-log">
+                        <div class="log-entry">
+                            <span class="time">[--:--:--]</span>
+                            <span class="msg">Aguardando início da análise...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card">
+                        <span class="numero" id="statArquivos">0</span>
+                        <div class="label">ARQUIVOS ANALISADOS</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="numero" id="statEntradas">0</span>
+                        <div class="label">ENTRADAS DETECTADAS</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="numero" id="statProxys">0</span>
+                        <div class="label">PROXYS DETECTADOS</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="numero" id="statTempo">0.0s</span>
+                        <div class="label">TEMPO DE PROCESSAMENTO</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="numero" id="statInstalados">0</span>
+                        <div class="label">INSTALADOS</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="numero" id="statRemovidos">0</span>
+                        <div class="label">REMOVIDOS</div>
+                    </div>
+                </div>
+
+                <div id="result" class="hidden mt-4"></div>
+
+                <div id="statusMessage" class="status-text">
+                    <span class="highlight">●</span> AGUARDANDO ARQUIVO...
+                </div>
+
+                <div class="footer-safe">
+                    <p>🔒 Nenhum arquivo é transmitido ou armazenado. Toda a análise ocorre no navegador.</p>
+                    <p class="mt-1">
+                        <span class="kernel">Desenvolvido por trapscreens</span>
+                        <span class="email">trapscreens@gmail.com</span>
+                        <span class="plan-badge">Diário (expira em 1 dia)</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAINEL ADMIN -->
+        <div id="pagAdmin" class="conteudo">
+            <div class="admin-header">
+                <h2>⚙️ PAINEL ADMIN – GERENCIADOR DE KEYS</h2>
+                <button id="btnVoltarAdmin" class="btn-voltar">← VOLTAR</button>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>KEY</th>
+                            <th>STATUS</th>
+                            <th>DISPOSITIVOS</th>
+                            <th>TEMPO ATIVA</th>
+                            <th>TEMPO RESTANTE</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminTableBody">
+                    </tbody>
+                </table>
+            </div>
+            <p style="margin-top:16px; font-size:0.7rem; color:#888;">
+                <i class="fa fa-refresh"></i> Dados atualizados em tempo real.
+            </p>
+        </div>
+
+    </div>
+
+    <script>
+        // ============================================================
+        // CONFIGURAÇÃO DO GITHUB
+        // ============================================================
+        const GITHUB_USERNAME = 'toledoguilherme081-eng';
+        const GITHUB_REPO = 'trap-ios';
+        const KEYS_URL = `https://raw.githubusercontent.com/${GITHUB_USERNAME}/${GITHUB_REPO}/refs/heads/main/keys.json?t=${Date.now()}`;
+
+        const ADMIN_KEYS = ['DONO', 'TRAP', 'HTML', 'MUMU', 'SKUNK'];
+
+        // ============================================================
+        // PROXY DATABASE (DO KERNEL) - ATUALIZADO
+        // ============================================================
+        const PROXY_LIST = [
+            // Zeex Free/VIP
+            { prefix: '78f', name: 'Zeex Free/VIP', category: 'zeex' },
+            { prefix: 'd14', name: 'Zeex Free/VIP', category: 'zeex' },
+            { prefix: '140', name: 'Zeex Free/VIP', category: 'zeex' },
+            { prefix: '06', name: 'Zeex Free/VIP', category: 'zeex' },
+            // Fatality Bypass
+            { prefix: '1ea', name: 'Fatality Bypass', category: 'fatality' },
+            { prefix: 'b0', name: 'Fatality Bypass', category: 'fatality' },
+            { prefix: '2c', name: 'Fatality Bypass', category: 'fatality' },
+            { prefix: '9d', name: 'Fatality Bypass', category: 'fatality' },
+            // Luxe Cheats
+            { prefix: 'b9', name: 'Luxe Cheats', category: 'luxe' },
+            { prefix: 'a4', name: 'Luxe Cheats', category: 'luxe' },
+            // XTREMO
+            { prefix: 'com.xtremo.mobile', name: 'XTREMO', category: 'xtremo' },
+            // Dash
+            { prefix: '60a', name: 'Dash', category: 'dash' },
+            { prefix: '70a', name: 'Dash', category: 'dash' },
+            { prefix: 'dash.proxy', name: 'Dash', category: 'dash' },
+            // Work
+            { prefix: 'd03090', name: 'Work', category: 'work' },
+            // Community Guest
+            { prefix: '439', name: 'Community Guest', category: 'guest' },
+            // Nova Casa de Aposta
+            { prefix: '704114', name: 'Nova Casa de Aposta', category: 'zeex' },
+            // Certificado Externo
+            { prefix: 'iMac.EFB7D714', name: 'Certificado Externo', category: 'certificado' },
+            { prefix: 'to.appdb.certs1', name: 'Certificado Externo', category: 'certificado' },
+            { prefix: 'to.appdb.certs2', name: 'Certificado Externo', category: 'certificado' },
+            { prefix: 'to.appdb.C2D9F2', name: 'Certificado Externo', category: 'certificado' },
+            // NOVAS DETECÇÕES ADICIONADAS
+            { prefix: 'com.aimbot.ios15~18', name: 'AIMBOT iOS 15~18', category: 'aimbot' },
+            { prefix: 'aimlock v16 (pro)', name: 'AIMLOCK V16 (PRO)', category: 'aimbot' },
+            { prefix: 'regedit plus', name: 'Regedit Plus', category: 'regedit' },
+            { prefix: 'no recoil📁', name: 'NO RECOIL📁', category: 'regedit' },
+            { prefix: 'khoindvn.cloudflare.warp.com.profile', name: 'khoindvn.cloudflare.warp.com.profile', category: 'proxy' },
+            { prefix: 'com.sensi.fluida.pro', name: 'com.sensi.fluida.pro', category: 'proxy' },
+            { prefix: 'com.giahuyregedit.apple-dns', name: 'com.giahuyregedit.apple-dns', category: 'regedit' },
+            { prefix: 'com.Vluv.lockprofile', name: 'com.Vluv.lockprofile', category: 'proxy' },
+            { prefix: 'profile.antijuda.headcrick.tati.ultra', name: 'profile.antijuda.headcrick.tati.ultra', category: 'proxy' },
+            // Desconhecidas
+            { prefix: '03', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '06a', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '0af', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '0b', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '0E', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '14', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '15d', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '28a', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '3c', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '3c4', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '4a', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '4cf', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '4D', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '4e', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '47', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '51', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '59ac', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '60af', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '62', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '62d', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '69', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '6b', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '6dd', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '70d', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '704', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '739', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '76d', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '7d', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '80', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '84', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '90eb', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '96f', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'B4', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'Bc', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'C9', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'D5', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'D7319', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'E0', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'E3', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'F9', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'XITADO', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'Regedit', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'Khoindvn', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'vip.uncOver', name: 'Jailbreak', category: 'proxy' },
+            { prefix: 'com.luxebypass', name: 'Luxe Bypass', category: 'luxe' },
+            { prefix: 'com.thanhcongregedit', name: 'REGEDIT', category: 'proxy' },
+            { prefix: 'com.thanhcongregedit.apple.dns', name: 'REGEDIT DNS', category: 'proxy' },
+            { prefix: 'authproxyxff.up', name: 'Auth Proxy', category: 'proxy' },
+            { prefix: 'freefireproxy.xyz', name: 'FreeFire Proxy', category: 'proxy' },
+            { prefix: 'proxyady', name: 'Proxy ADY', category: 'proxy' },
+            { prefix: 'ae7', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'a4c', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'a5', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'a9', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'a48', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'a64', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'bd', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'bd32', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'c17', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'c25', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'd03', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'dd4f0', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'f6', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'f6c', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'f54', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'ff6', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'ff32', name: 'Desconhecida', category: 'proxy' },
+            { prefix: 'mit', name: 'Desconhecida', category: 'proxy' },
+            { prefix: '2bb', name: 'Desconhecida', category: 'proxy' }
+        ];
+
+        // ============================================================
+        // SISTEMA DE LOGIN
+        // ============================================================
+        let isAdmin = false;
+        let currentKey = '';
+        let keysData = {};
+        let currentUserData = null;
+
+        let adminKeysData = {
+            'DONO': { devices: 0 },
+            'TRAP': { devices: 0 },
+            'HTML': { devices: 0 },
+            'MUMU': { devices: 0 },
+            'SKUNK': { devices: 0 }
+        };
+
+        const loginScreen = document.getElementById('telaLogin');
+        const painel = document.getElementById('painel');
+        const keyInput = document.getElementById('keyInput');
+        const loginBtn = document.getElementById('btnLogin');
+        const aviso = document.getElementById('avisoErro');
+        const statusLogin = document.getElementById('statusLogin');
+        const nomeUser = document.getElementById('nomeUser');
+        const planBadgeHeader = document.getElementById('planBadgeHeader');
+        const sairBtn = document.getElementById('sair');
+        const adminBadge = document.getElementById('adminBadge');
+        const btnAdminToggle = document.getElementById('btnAdminToggle');
+
+        const savedKey = localStorage.getItem('antibypass_scanner_key');
+
+        // ============================================================
+        // FUNÇÕES DO SISTEMA DE KEY
+        // ============================================================
+        function atualizarDispositivos() {
+            Object.keys(adminKeysData).forEach(k => { adminKeysData[k].devices = 0; });
+            if (currentKey && ADMIN_KEYS.includes(currentKey)) {
+                adminKeysData[currentKey].devices = 1;
+            }
+        }
+
+        function formatarTempoRestante(tempoRestanteMs) {
+            if (tempoRestanteMs <= 0) return 'EXPIRADA';
+            const totalSegundos = Math.floor(tempoRestanteMs / 1000);
+            const dias = Math.floor(totalSegundos / 86400);
+            const horas = Math.floor((totalSegundos % 86400) / 3600);
+            const minutos = Math.floor((totalSegundos % 3600) / 60);
+            const segundos = totalSegundos % 60;
+            if (dias > 0) {
+                return dias + 'd ' + horas + 'h';
+            } else {
+                let partes = [];
+                if (horas > 0) partes.push(horas + 'h');
+                if (minutos > 0) partes.push(minutos + 'm');
+                partes.push(segundos + 's');
+                return partes.join(' ');
+            }
+        }
+
+        function formatarTempoAtiva(criacao) {
+            const diff = Date.now() - new Date(criacao).getTime();
+            const totalSegundos = Math.floor(diff / 1000);
+            const dias = Math.floor(totalSegundos / 86400);
+            const horas = Math.floor((totalSegundos % 86400) / 3600);
+            const minutos = Math.floor((totalSegundos % 3600) / 60);
+            if (dias > 0) {
+                return dias + 'd ' + horas + 'h';
+            } else {
+                return horas + 'h ' + minutos + 'm';
+            }
+        }
+
+        function renderizarTabelaAdmin() {
+            const tbody = document.getElementById('adminTableBody');
+            if (!tbody) return;
+            let html = '';
+            const agora = Date.now();
+            atualizarDispositivos();
+            const keysOrdenadas = Object.keys(adminKeysData).sort();
+            keysOrdenadas.forEach(key => {
+                const data = adminKeysData[key];
+                const keyInfo = keysData[key];
+                if (!keyInfo) return;
+                const status = keyInfo.active ? 'ativa' : 'expirada';
+                const statusClass = status === 'ativa' ? 'ativa' : 'expirada';
+                const statusLabel = status === 'ativa' ? '✅ ATIVA' : '⛔ EXPIRADA';
+                const tempoAtiva = formatarTempoAtiva(keyInfo.createdAt);
+                const criacao = new Date(keyInfo.createdAt).getTime();
+                const expiracao = criacao + (keyInfo.expiresIn * 24 * 60 * 60 * 1000);
+                const tempoRestanteMs = expiracao - agora;
+                const tempoRestanteStr = tempoRestanteMs > 0 ? formatarTempoRestante(tempoRestanteMs) : 'EXPIRADA';
+                const urgente = tempoRestanteMs > 0 && tempoRestanteMs < 24 * 60 * 60 * 1000;
+                html += `
+                    <tr>
+                        <td><strong>${key}</strong></td>
+                        <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+                        <td><span class="devices-count">${data.devices}</span></td>
+                        <td>${tempoAtiva}</td>
+                        <td><span class="tempo-restante ${urgente ? 'urgente' : ''}">${tempoRestanteStr}</span></td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        async function carregarKeys() {
+            try {
+                const url = KEYS_URL;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Erro ao carregar keys do GitHub');
+                const data = await response.json();
+                const keysObj = {};
+                if (data.keys && Array.isArray(data.keys)) {
+                    data.keys.forEach(k => {
+                        keysObj[k.key] = {
+                            active: k.active || false,
+                            createdAt: k.createdAt || new Date().toISOString(),
+                            expiresIn: k.expiresIn || 1,
+                            user: k.user || 'Usuário',
+                            plan: k.plan || 'diario',
+                            expires_at: k.expires_at || null
+                        };
+                    });
+                }
+                keysData = keysObj;
+                return keysObj;
+            } catch (error) {
+                console.error('Erro ao carregar keys:', error);
+                return {};
+            }
+        }
+
+        async function verifyKey(keyDigitada) {
+            try {
+                const keys = await carregarKeys();
+                const keyEncontrada = keys[keyDigitada];
+                if (!keyEncontrada) return { valid: false, message: 'Key não encontrada' };
+                if (!keyEncontrada.active) return { valid: false, message: 'Key expirada ou desativada' };
+                
+                if (keyEncontrada.expires_at) {
+                    const now = new Date();
+                    const expiresAt = new Date(keyEncontrada.expires_at);
+                    if (now > expiresAt) {
+                        return { valid: false, message: 'Key expirada' };
+                    }
+                }
+                
+                const isAdminKey = ADMIN_KEYS.includes(keyDigitada);
+                return { 
+                    valid: true, 
+                    key: keyEncontrada,
+                    isAdmin: isAdminKey,
+                    userData: keyEncontrada
+                };
+            } catch (error) {
+                console.error(error);
+                return { valid: false, message: 'Erro de conexão' };
+            }
+        }
+
+        // ============================================================
+        // LOGIN
+        // ============================================================
+        if (savedKey) {
+            verifyKey(savedKey).then(function(result) {
+                if (result.valid) {
+                    entrar(savedKey, result.userData, result.isAdmin);
+                } else {
+                    localStorage.removeItem('antibypass_scanner_key');
+                }
+            });
+        }
+
+        keyInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                loginBtn.click();
+            }
+        });
+
+        loginBtn.addEventListener('click', async function() {
+            var key = keyInput.value.trim().toUpperCase();
+            aviso.classList.add('hidden');
+            statusLogin.classList.remove('hidden');
+            if (!key) {
+                aviso.textContent = '⚠️ DIGITE UMA KEY VÁLIDA';
+                aviso.classList.remove('hidden');
+                statusLogin.classList.add('hidden');
+                return;
+            }
+            loginBtn.disabled = true;
+            loginBtn.textContent = '⏳ VERIFICANDO...';
+            var result = await verifyKey(key);
+            statusLogin.classList.add('hidden');
+            loginBtn.disabled = false;
+            loginBtn.textContent = '🔓 VERIFICAR';
+            if (result.valid) {
+                localStorage.setItem('antibypass_scanner_key', key);
+                entrar(key, result.userData, result.isAdmin);
+            } else {
+                aviso.textContent = '❌ ' + result.message;
+                aviso.classList.remove('hidden');
+            }
+        });
+
+        function entrar(key, userData, admin) {
+            isAdmin = admin;
+            currentKey = key;
+            currentUserData = userData;
+            
+            loginScreen.style.display = 'none';
+            painel.classList.remove('hidden');
+            nomeUser.textContent = '✅ ' + (userData.user || key);
+            
+            const planLabels = {
+                'diario': '📅 Diário',
+                'semanal': '📆 Semanal',
+                'mensal': '📆 Mensal',
+                'trimestral': '📆 Trimestral',
+                'vitalicio': '♾️ Vitalício'
+            };
+            const planLabel = planLabels[userData.plan] || userData.plan;
+            planBadgeHeader.textContent = planLabel;
+            planBadgeHeader.className = 'plan-badge-mini';
+            
+            if (isAdmin) {
+                adminBadge.classList.remove('hidden');
+                btnAdminToggle.classList.remove('hidden');
+                if (adminKeysData[key]) {
+                    adminKeysData[key].devices = 1;
+                }
+                carregarKeys().then(() => {
+                    renderizarTabelaAdmin();
+                });
+            } else {
+                adminBadge.classList.add('hidden');
+                btnAdminToggle.classList.add('hidden');
+            }
+            
+            addLog('✅ Autenticado como: ' + (userData.user || key), 'success');
+        }
+
+        sairBtn.addEventListener('click', function() {
+            localStorage.removeItem('antibypass_scanner_key');
+            location.reload();
+        });
+
+        document.getElementById('recarregarKeys').addEventListener('click', function() {
+            localStorage.removeItem('antibypass_scanner_key');
+            addLog('🔄 Keys recarregadas. Faça login novamente.', 'info');
+            setTimeout(function() {
+                location.reload();
+            }, 1000);
+        });
+
+        // ============================================================
+        // PAINEL ADMIN - CONTROLE DE VISIBILIDADE
+        // ============================================================
+        const pagScan = document.getElementById('pagScan');
+        const pagAdmin = document.getElementById('pagAdmin');
+        const btnVoltarAdmin = document.getElementById('btnVoltarAdmin');
+
+        function mostrarAdmin() {
+            pagScan.style.display = 'none';
+            pagAdmin.style.display = 'block';
+            carregarKeys().then(() => {
+                renderizarTabelaAdmin();
+            });
+        }
+
+        function mostrarScanner() {
+            pagScan.style.display = 'block';
+            pagAdmin.style.display = 'none';
+        }
+
+        btnAdminToggle.addEventListener('click', function() {
+            if (isAdmin) {
+                mostrarAdmin();
+            } else {
+                alert('Acesso negado! Você não tem permissão para ver o painel admin.');
+            }
+        });
+
+        btnVoltarAdmin.addEventListener('click', function() {
+            mostrarScanner();
+        });
+
+        mostrarScanner();
+
+        // ============================================================
+        // SOBRE MODAL
+        // ============================================================
+        function abrirSobre() {
+            document.getElementById('sobreModal').classList.add('active');
+        }
+        function fecharSobre() {
+            document.getElementById('sobreModal').classList.remove('active');
+        }
+        document.getElementById('sobreModal').addEventListener('click', function(e) {
+            if (e.target === this) fecharSobre();
+        });
+
+        // ============================================================
+        // VÍDEO DE FUNDO + FALLBACK
+        // ============================================================
+        const bgVideo = document.getElementById('bgVideo');
+        const fallbackCanvas = document.getElementById('fallbackCanvas');
+        const fallbackCtx = fallbackCanvas.getContext('2d');
+        let fallbackActive = false;
+
+        function tryPlayVideo() {
+            bgVideo.play().catch(function(e) {
+                console.log('Ativando fallback:', e);
+                activateFallback();
+            });
+        }
+
+        function activateFallback() {
+            if (fallbackActive) return;
+            fallbackActive = true;
+            fallbackCanvas.style.display = 'block';
+            bgVideo.style.display = 'none';
+            initFallbackMatrix();
+        }
+
+        bgVideo.addEventListener('loadeddata', function() {
+            fallbackCanvas.style.display = 'none';
+        });
+
+        bgVideo.addEventListener('error', function() {
+            activateFallback();
+        });
+
+        tryPlayVideo();
+
+        function initFallbackMatrix() {
+            function resizeFallback() {
+                fallbackCanvas.width = window.innerWidth;
+                fallbackCanvas.height = window.innerHeight;
+            }
+            resizeFallback();
+            window.addEventListener('resize', resizeFallback);
+
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+{}[]|:;<>,.?/~`';
+            const fontSize = 18;
+            let columns = Math.floor(fallbackCanvas.width / fontSize);
+            let drops = [];
+
+            for (let i = 0; i < columns; i++) {
+                drops[i] = {
+                    y: Math.random() * -fallbackCanvas.height,
+                    speed: 0.5 + Math.random() * 2.5,
+                    char: chars[Math.floor(Math.random() * chars.length)]
+                };
+            }
+
+            function drawFallback() {
+                fallbackCtx.fillStyle = 'rgba(0, 0, 0, 0.04)';
+                fallbackCtx.fillRect(0, 0, fallbackCanvas.width, fallbackCanvas.height);
+                fallbackCtx.font = fontSize + 'px monospace';
+
+                for (let i = 0; i < drops.length; i++) {
+                    const drop = drops[i];
+                    const char = chars[Math.floor(Math.random() * chars.length)];
+                    const x = i * fontSize;
+                    const y = drop.y;
+                    const alpha = 0.2 + Math.min(1, (drop.y + fallbackCanvas.height) / (fallbackCanvas.height * 1.5)) * 0.5;
+                    const colors = [
+                        'rgba(230, 57, 70, ' + (alpha * 0.2) + ')',
+                        'rgba(230, 57, 70, ' + (alpha * 0.15) + ')'
+                    ];
+                    fallbackCtx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+                    fallbackCtx.shadowColor = 'rgba(230, 57, 70, 0.02)';
+                    fallbackCtx.shadowBlur = 8;
+                    fallbackCtx.fillText(char, x, y);
+                    fallbackCtx.shadowBlur = 0;
+                    drop.y += drop.speed;
+                    if (drop.y > fallbackCanvas.height + 50) {
+                        drop.y = -50 - Math.random() * 100;
+                        drop.speed = 0.5 + Math.random() * 2.5;
+                    }
+                }
+                requestAnimationFrame(drawFallback);
+            }
+            drawFallback();
+        }
+
+        // ============================================================
+        // CONSOLE LOG
+        // ============================================================
+        const consoleLog = document.getElementById('consoleLog');
+
+        function addLog(mensagem, tipo) {
+            const now = new Date();
+            const time = now.toTimeString().slice(0, 8);
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            const msgClass = tipo ? 'msg ' + tipo : 'msg';
+            entry.innerHTML = `<span class="time">[${time}]</span> <span class="${msgClass}">${mensagem}</span>`;
+            consoleLog.appendChild(entry);
+            consoleLog.scrollTop = consoleLog.scrollHeight;
+        }
+
+        // ============================================================
+        // SCANNER - DETECÇÃO DE PROXYS (DO KERNEL)
+        // ============================================================
+        const uploadArea = document.getElementById('uploadArea');
+        const arquivoInput = document.getElementById('arquivo');
+        const botaoAnalisar = document.getElementById('analisar');
+        const botaoLimpar = document.getElementById('limpar');
+        const areaResultado = document.getElementById('result');
+        const areaProgresso = document.getElementById('areaProgresso');
+        const barra = document.getElementById('barra');
+        const progressoTexto = document.getElementById('progressoTexto');
+        const statusTexto = document.getElementById('statusTexto');
+        const statusMessage = document.getElementById('statusMessage');
+        const fileList = document.getElementById('fileList');
+        const statArquivos = document.getElementById('statArquivos');
+        const statEntradas = document.getElementById('statEntradas');
+        const statProxys = document.getElementById('statProxys');
+        const statTempo = document.getElementById('statTempo');
+        const statInstalados = document.getElementById('statInstalados');
+        const statRemovidos = document.getElementById('statRemovidos');
+        let arquivosEscolhidos = [];
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                arquivosEscolhidos = Array.from(e.dataTransfer.files);
+                atualizarListaArquivos();
+                botaoAnalisar.disabled = false;
+                addLog('📁 ' + arquivosEscolhidos.length + ' arquivo(s) selecionado(s)', 'info');
+            }
+        });
+
+        uploadArea.addEventListener('click', function() {
+            arquivoInput.click();
+        });
+
+        arquivoInput.addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                arquivosEscolhidos = Array.from(e.target.files);
+                atualizarListaArquivos();
+                botaoAnalisar.disabled = false;
+                addLog('📁 ' + arquivosEscolhidos.length + ' arquivo(s) selecionado(s)', 'info');
+            }
+        });
+
+        function atualizarListaArquivos() {
+            if (arquivosEscolhidos.length > 0) {
+                fileList.classList.remove('hidden');
+                var nomes = arquivosEscolhidos.map(function(f) { return f.name; }).join(', ');
+                fileList.textContent = '📄 ' + nomes;
+            } else {
+                fileList.classList.add('hidden');
+            }
+        }
+
+        botaoLimpar.addEventListener('click', function() {
+            arquivosEscolhidos = [];
+            arquivoInput.value = '';
+            fileList.classList.add('hidden');
+            botaoAnalisar.disabled = true;
+            areaResultado.classList.add('hidden');
+            areaResultado.innerHTML = '';
+            statArquivos.textContent = '0';
+            statEntradas.textContent = '0';
+            statProxys.textContent = '0';
+            statTempo.textContent = '0.0s';
+            statInstalados.textContent = '0';
+            statRemovidos.textContent = '0';
+            statusMessage.innerHTML = '<span class="highlight">●</span> AGUARDANDO ARQUIVO...';
+            consoleLog.innerHTML = '';
+            addLog('🧹 Análise limpa', 'info');
+            addLog('Aguardando início da análise...', '');
+            progressoTexto.textContent = '0%';
+            barra.style.width = '0%';
+        });
+
+        // ============================================================
+        // LEITURA DE ARQUIVO COM SUPORTE A BPLIST
+        // ============================================================
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    try {
+                        let result = reader.result;
+                        if (result instanceof ArrayBuffer) {
+                            const decoder = new TextDecoder('utf-8', { fatal: false });
+                            result = decoder.decode(result);
+                        }
+                        if (typeof result === 'string' && result.startsWith('bplist')) {
+                            result = decodeBplist(result);
+                        }
+                        resolve(result);
+                    } catch (err) {
+                        reject(err);
+                    }
+                };
+                reader.onerror = () => reject(reader.error);
+                reader.readAsText(file);
+            });
+        }
+
+        // ============================================================
+        // BPLIST DECODER
+        // ============================================================
+        function decodeBplist(conteudo) {
+            try {
+                if (!conteudo.startsWith('bplist')) {
+                    return conteudo;
+                }
+
+                addLog('🔍 BPLIST detectado. Decodificando...', 'warning');
+
+                let texto = '';
+                let i = 0;
+                const bytes = new Uint8Array(conteudo.length);
+                for (let j = 0; j < conteudo.length; j++) {
+                    bytes[j] = conteudo.charCodeAt(j) & 0xFF;
+                }
+
+                while (i < bytes.length) {
+                    const byte = bytes[i];
+
+                    if (byte === 0x50 || byte === 0x40) {
+                        i++;
+                        if (i < bytes.length) {
+                            const len = bytes[i];
+                            i++;
+                            if (i + len < bytes.length) {
+                                let str = '';
+                                for (let k = 0; k < len; k++) {
+                                    if (bytes[i + k] >= 32 && bytes[i + k] < 127) {
+                                        str += String.fromCharCode(bytes[i + k]);
+                                    }
+                                }
+                                if (str.length > 2) {
+                                    texto += str + '\n';
+                                }
+                                i += len;
+                                continue;
+                            }
+                        }
+                    }
+
+                    if (byte === 0x60) {
+                        i++;
+                        if (i < bytes.length) {
+                            const len = bytes[i];
+                            i++;
+                            if (i + len * 2 < bytes.length) {
+                                let str = '';
+                                for (let k = 0; k < len * 2; k += 2) {
+                                    const charCode = (bytes[i + k] << 8) | bytes[i + k + 1];
+                                    if (charCode >= 32 && charCode < 127) {
+                                        str += String.fromCharCode(charCode);
+                                    }
+                                }
+                                if (str.length > 2) {
+                                    texto += str + '\n';
+                                }
+                                i += len * 2;
+                                continue;
+                            }
+                        }
+                    }
+
+                    i++;
+                }
+
+                addLog('✅ BPLIST decodificado: ' + texto.split('\n').length + ' linhas extraídas', 'success');
+                return texto;
+            } catch (e) {
+                addLog('⚠️ Erro ao decodificar BPLIST: ' + e.message, 'error');
+                return conteudo;
+            }
+        }
+
+        // ============================================================
+        // EXTRAIR CÓDIGO COMPLETO
+        // ============================================================
+        function extrairCodigoCompleto(linha, prefixo) {
+            const linhaTrim = linha.trim();
+            if (linhaTrim === '<date/>' || linhaTrim === '</date>') return null;
+            if (linhaTrim === '<string/>' || linhaTrim === '</string>') return null;
+
+            const partes = linha.split(/\s+/);
+            for (const parte of partes) {
+                if (parte.startsWith('<') && parte.endsWith('>')) continue;
+
+                let parteValida = true;
+                for (let i = 0; i < parte.length; i++) {
+                    const charCode = parte.charCodeAt(i);
+                    if (charCode < 32 || charCode > 126) {
+                        parteValida = false;
+                        break;
+                    }
+                }
+                if (!parteValida) continue;
+
+                if (parte.toLowerCase().includes(prefixo.toLowerCase())) {
+                    if (/^\d{4}-\d{2}-\d{2}/.test(parte)) continue;
+                    if (/^\d{2}:\d{2}:\d{2}/.test(parte)) continue;
+                    if (/^\d{2}\/\d{2}\/\d{4}/.test(parte)) continue;
+                    if (parte.length > 3 && parte.length < 50) {
+                        return parte;
+                    }
+                }
+            }
+
+            const match = linha.match(/([a-zA-Z0-9._-]{4,40})/);
+            if (match) {
+                const candidato = match[1];
+                if (/^\d{4}-\d{2}-\d{2}/.test(candidato)) return null;
+                if (/^\d{2}:\d{2}:\d{2}/.test(candidato)) return null;
+                if (/^\d{2}\/\d{2}\/\d{4}/.test(candidato)) return null;
+                return candidato;
+            }
+
+            if (prefixo.length > 2) {
+                return prefixo;
+            }
+
+            return null;
+        }
+
+        // ============================================================
+        // DETECTAR PROXYS (COM FILTRO DE LIXO BINÁRIO)
+        // ============================================================
+        function detectProxyInContent(content) {
+            const found = [];
+            const lines = content.split('\n');
+
+            const palavrasFalsas = [
+                'allow', 'private', 'webContent', 'filter', 'blacklist', 'whitelist', 
+                'autoFill', 'airprint', 'tvremote', 'classroom', 'esim', 'spellcheck',
+                'writingtools', 'mailprivacy', 'settings', 'profile', 'managedconfiguration',
+                'batterysaver', 'watchlistkit', 'parsec', 'hashtagimages', 'cloudkit',
+                'datamigrator', 'restrictionmanager', 'mcprofile', 'mcsettings', 'preferences',
+                'passd', 'purplebuddy', 'itunesstored', 'lsd.appremoval', 'profiled',
+                'apple.news', 'appstore', 'removedsystemappbundleids', 'forcepreserveesimonerase',
+                'allowairdrop', 'allowinstalledapp', 'allowmailprivacyprotection', 'privaterelay',
+                'knownairprinttargets', 'passwordautofilldomains', 'webcontentfilterblacklisted',
+                'date', 'managedWebDomains'
+            ];
+
+            for (const proxy of PROXY_LIST) {
+                const prefix = proxy.prefix.toLowerCase();
+
+                for (const line of lines) {
+                    const lineLower = line.toLowerCase();
+
+                    // PULA linhas com caracteres binários
+                    let caracteresLegiveis = 0;
+                    let totalCaracteres = 0;
+                    for (let i = 0; i < line.length; i++) {
+                        const charCode = line.charCodeAt(i);
+                        if ((charCode >= 32 && charCode <= 126) || charCode === 10 || charCode === 13) {
+                            caracteresLegiveis++;
+                        }
+                        totalCaracteres++;
+                    }
+                    if (totalCaracteres > 0 && (caracteresLegiveis / totalCaracteres) < 0.8) {
+                        continue;
+                    }
+
+                    // PULA linhas que são números puros
+                    if (/^[\d\s]+$/.test(line.trim())) continue;
+                    if (/^[0-9A-Fa-f\s]+$/.test(line.trim())) continue;
+
+                    // PULA linhas com palavras falsas
+                    let temFalso = false;
+                    for (const falso of palavrasFalsas) {
+                        if (lineLower.includes(falso) && !lineLower.includes('proxy') && !lineLower.includes('http')) {
+                            temFalso = true;
+                            break;
+                        }
+                    }
+                    if (temFalso) continue;
+
+                    if (lineLower.includes(prefix)) {
+                        const codigoCompleto = extrairCodigoCompleto(line, prefix);
+                        if (codigoCompleto === null) continue;
+
+                        let codigoValido = true;
+                        for (let i = 0; i < codigoCompleto.length; i++) {
+                            const charCode = codigoCompleto.charCodeAt(i);
+                            if (charCode < 32 || charCode > 126) {
+                                codigoValido = false;
+                                break;
+                            }
+                        }
+                        if (!codigoValido) continue;
+
+                        let operacao = 'UNKNOWN';
+                        let operacaoDetalhada = '⚪ Desconhecida';
+                        if (lineLower.includes('remove') || lineLower.includes('delet')) {
+                            operacao = 'REMOVED';
+                            operacaoDetalhada = '🔴 REMOVIDO';
+                        } else if (lineLower.includes('install') || lineLower.includes('add') || lineLower.includes('creat')) {
+                            operacao = 'INSTALLED';
+                            operacaoDetalhada = '🟢 INSTALADO';
+                        }
+
+                        found.push({
+                            prefix: proxy.prefix,
+                            codigo: codigoCompleto,
+                            name: proxy.name,
+                            category: proxy.category,
+                            operacao: operacao,
+                            operacaoDetalhada: operacaoDetalhada
+                        });
+                        break;
+                    }
+                }
+            }
+
+            return found;
+        }
+
+        // ============================================================
+        // ANALISAR ARQUIVOS
+        // ============================================================
+        async function runAnalysis() {
+            if (arquivosEscolhidos.length === 0) return;
+
+            botaoAnalisar.disabled = true;
+            areaResultado.classList.add('hidden');
+            areaResultado.innerHTML = '';
+            areaProgresso.classList.remove('hidden');
+            statusMessage.innerHTML = '<span class="highlight">●</span> PROCESSANDO...';
+            addLog('🚀 Iniciando análise (foco em Proxys iOS)...', 'info');
+            atualizarProgresso(0, 'Preparando...');
+
+            try {
+                const inicio = performance.now();
+                let totalArquivosProcessados = 0;
+                let allResults = [];
+
+                for (let idx = 0; idx < arquivosEscolhidos.length; idx++) {
+                    const arquivo = arquivosEscolhidos[idx];
+                    addLog('📄 Processando: ' + arquivo.name, 'info');
+                    
+                    try {
+                        let conteudo = '';
+                        try {
+                            conteudo = await readFileAsText(arquivo);
+                        } catch (e) {
+                            addLog('⚠️ Erro ao ler ' + arquivo.name + ': ' + e.message, 'error');
+                            continue;
+                        }
+
+                        if (conteudo && conteudo.length > 0) {
+                            const resultados = detectProxyInContent(conteudo);
+                            if (resultados.length > 0) {
+                                allResults = allResults.concat(resultados);
+                                addLog('🎯 ' + resultados.length + ' detecções em ' + arquivo.name, 'success');
+                            } else {
+                                addLog('ℹ️ Nenhuma detecção em ' + arquivo.name, 'info');
+                            }
+                        }
+                        totalArquivosProcessados++;
+                    } catch (err) {
+                        addLog('⚠️ Erro ao processar ' + arquivo.name + ': ' + err.message, 'error');
+                    }
+
+                    const progressoGeral = Math.round(10 + ((idx + 1) / arquivosEscolhidos.length) * 70);
+                    atualizarProgresso(progressoGeral, 'Processado: ' + (idx + 1) + '/' + arquivosEscolhidos.length);
+                    await new Promise(r => setTimeout(r, 0));
+                }
+
+                atualizarProgresso(90, 'Analisando resultados...');
+
+                const proxyMap = new Map();
+                let totalInstalados = 0;
+                let totalRemovidos = 0;
+
+                for (const result of allResults) {
+                    const key = result.name;
+                    if (!proxyMap.has(key)) {
+                        proxyMap.set(key, {
+                            nome: result.name,
+                            categoria: result.category,
+                            logs: []
+                        });
+                    }
+                    proxyMap.get(key).logs.push({
+                        prefix: result.prefix,
+                        codigo: result.codigo,
+                        operacao: result.operacao,
+                        operacaoDetalhada: result.operacaoDetalhada
+                    });
+                    if (result.operacao === 'INSTALLED') totalInstalados++;
+                    if (result.operacao === 'REMOVED') totalRemovidos++;
+                }
+
+                const fim = performance.now();
+                const tempoProcessamento = ((fim - inicio) / 1000).toFixed(1);
+
+                atualizarProgresso(100, '✅ Concluído!');
+
+                const totalDetectados = allResults.length;
+
+                statArquivos.textContent = totalArquivosProcessados;
+                statEntradas.textContent = totalDetectados;
+                statProxys.textContent = proxyMap.size;
+                statTempo.textContent = tempoProcessamento + 's';
+                statInstalados.textContent = totalInstalados;
+                statRemovidos.textContent = totalRemovidos;
+                statusMessage.innerHTML = '<span class="highlight">✅</span> ANÁLISE CONCLUÍDA';
+
+                addLog('✅ Análise concluída em ' + tempoProcessamento + 's! ' + totalDetectados + ' entrada(s).', 'success');
+
+                setTimeout(function() {
+                    areaResultado.classList.remove('hidden');
+                    var html = '';
+
+                    if (proxyMap.size > 0) {
+                        for (const [nome, data] of proxyMap) {
+                            const logCount = data.logs.length;
+                            const hasRemoved = data.logs.some(l => l.operacao === 'REMOVED');
+                            const hasInstalled = data.logs.some(l => l.operacao === 'INSTALLED');
+
+                            let categoryBadge = 'proxy';
+                            let categoryLabel = data.categoria.toUpperCase();
+                            const catMap = {
+                                'zeex': ['zeex', 'ZEEX'],
+                                'fatality': ['fatality', 'FATALITY'],
+                                'luxe': ['luxe', 'LUXE'],
+                                'xtremo': ['xtremo', 'XTREMO'],
+                                'dash': ['dash', 'DASH'],
+                                'work': ['work', 'WORK'],
+                                'guest': ['guest', 'GUEST'],
+                                'certificado': ['certificado', 'CERTIFICADO'],
+                                'aimbot': ['aimbot', 'AIMBOT'],
+                                'regedit': ['regedit', 'REGEDIT']
+                            };
+                            if (catMap[data.categoria]) {
+                                categoryBadge = catMap[data.categoria][0];
+                                categoryLabel = catMap[data.categoria][1];
+                            }
+
+                            html += `
+                                <div style="margin-bottom:12px;border:1px solid rgba(230,57,70,0.08);border-radius:8px;overflow:hidden;">
+                                    <div class="categoria-header" onclick="toggleCategoria('cat-${nome.replace(/[^a-zA-Z0-9]/g, '')}')">
+                                        <span class="titulo">${nome} <span class="category-badge ${categoryBadge}" style="font-size:0.5rem;padding:2px 8px;border-radius:12px;margin-left:4px;">${categoryLabel}</span></span>
+                                        <span class="contador ${categoryBadge}">${logCount}</span>
+                                        <span class="seta" id="seta-cat-${nome.replace(/[^a-zA-Z0-9]/g, '')}">▶</span>
+                                    </div>
+                                    <div class="categoria-lista" id="cat-${nome.replace(/[^a-zA-Z0-9]/g, '')}">
+                            `;
+
+                            const sortedLogs = [...data.logs].sort((a, b) => {
+                                if (a.operacao === 'REMOVED' && b.operacao !== 'REMOVED') return -1;
+                                if (a.operacao !== 'REMOVED' && b.operacao === 'REMOVED') return 1;
+                                return 0;
+                            });
+
+                            for (const log of sortedLogs) {
+                                const tagClass = log.operacao === 'REMOVED' ? 'removido' : 
+                                    log.operacao === 'INSTALLED' ? 'instalado' : 'proxy';
+                                const badgeText = log.operacao === 'REMOVED' ? '🔴 REMOVIDO' : 
+                                    log.operacao === 'INSTALLED' ? '🟢 INSTALADO' : '⚪ DESCONHECIDO';
+
+                                // Remove prefixo "ofileEvents_" se presente
+                                const codigoExibido = log.codigo.replace(/^ofileEvents_/, '');
+
+                                html += `
+                                    <div class="result-item">
+                                        <div class="pkg">
+                                            <span style="font-family:'Courier New',monospace;font-size:0.7rem;color:#FFA94D;">${codigoExibido}</span>
+                                            <span class="tag ${tagClass}">${badgeText}</span>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+
+                            html += `</div></div>`;
+                        }
+                    } else {
+                        html += `
+                            <div style="text-align:center;padding:30px 0;border:1px solid rgba(0,204,119,0.06);border-radius:12px;background:rgba(0,204,119,0.02);">
+                                <i class="fa fa-check-circle" style="font-size:2.5rem;color:#00CC77;display:block;margin-bottom:8px;"></i>
+                                <div style="font-size:1rem;color:#00CC77;">✅ SISTEMA LIMPO</div>
+                                <div style="color:#888;font-size:0.75rem;margin-top:4px;">Nenhum proxy detectado</div>
+                            </div>
+                        `;
+                    }
+
+                    areaResultado.innerHTML = html;
+
+                    setTimeout(function() {
+                        areaProgresso.classList.add('hidden');
+                        botaoAnalisar.disabled = false;
+                        progressoTexto.textContent = '0%';
+                        barra.style.width = '0%';
+                    }, 500);
+
+                }, 200);
+
+            } catch (erro) {
+                alert('ERRO: ' + erro.message);
+                addLog('❌ Erro: ' + erro.message, 'error');
+                areaProgresso.classList.add('hidden');
+                botaoAnalisar.disabled = false;
+                statusMessage.innerHTML = '<span class="highlight">❌</span> ERRO NA ANÁLISE';
+                progressoTexto.textContent = '0%';
+                barra.style.width = '0%';
+            }
+        }
+
+        function toggleCategoria(id) {
+            var lista = document.getElementById(id);
+            if (!lista) return;
+            var header = lista.previousElementSibling;
+            if (!header || !header.classList.contains('categoria-header')) return;
+            var seta = document.getElementById('seta-' + id);
+            if (!seta) return;
+            
+            if (lista.classList.contains('aberta')) {
+                lista.classList.remove('aberta');
+                seta.classList.remove('aberta');
+                seta.textContent = '▶';
+            } else {
+                lista.classList.add('aberta');
+                seta.classList.add('aberta');
+                seta.textContent = '▼';
+            }
+        }
+
+        function atualizarProgresso(porcentagem, mensagem) {
+            const pct = Math.min(100, Math.max(0, porcentagem));
+            barra.style.width = pct + '%';
+            progressoTexto.textContent = Math.round(pct) + '%';
+            if (mensagem) {
+                statusTexto.textContent = mensagem;
+            }
+        }
+
+        // ============================================================
+        // INICIAR SCANNER
+        // ============================================================
+        botaoAnalisar.addEventListener('click', runAnalysis);
+
+        if (savedKey) {
+            carregarKeys().then(() => {});
+        }
+
+        // Inicializa o scanner se já estiver logado
+        if (localStorage.getItem('antibypass_scanner_key')) {
+            // O scanner já foi inicializado pelo login
+        }
+    </script>
+</body>
+</html>
