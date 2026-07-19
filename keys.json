@@ -28,7 +28,7 @@
       "key": "SPARTA",
       "createdAt": "2026-07-18T14:30:00.000Z",
       "expiresIn": 2,
-      "active": true
+      "active": false
     }
   ]
 }
